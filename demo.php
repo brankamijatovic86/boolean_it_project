@@ -1,18 +1,6 @@
 <?php
 
-$servername = "localhost";
-$username = "root";
-$password = "password";
-$dbname = "booleanIT";
-$file = 'suppliers.csv';
-
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
-
+require "database.php";
 
 if (($handle = fopen($file, "r")) !== FALSE) {
     fgetcsv($handle);
@@ -50,7 +38,6 @@ if (($handle = fopen($file, "r")) !== FALSE) {
             }
             
             $supplierId = $conn->insert_id;
-
             
             if ($supplierId == 0) {
                 $supplierSql = "SELECT id FROM suppliers WHERE name LIKE ?";
