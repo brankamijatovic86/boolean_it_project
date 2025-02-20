@@ -9,7 +9,7 @@ header("Content-Type: application/json");
 
 $supplierApi = new SupplierAPI($conn);
 
-echo $supplierApi->handleRequest();
+$supplierApi->handleRequest();
 
 $conn->close();
 
@@ -20,6 +20,7 @@ class SupplierAPI {
 
     private $conn;
     private $requestMethod = '';
+    private $inputData = '';
 
 
     // Constructor to initialize the database connection
@@ -31,12 +32,11 @@ class SupplierAPI {
     public function handleRequest() {
 
         $this->requestMethod = $_SERVER['REQUEST_METHOD'];
+        $this->inputData = json_decode(file_get_contents('php://input'), true);
         $action = isset($_GET['action']) ? $_GET['action'] : '';
+        
         $id = isset($_GET['id']) ? (int)$_GET['id'] : null;
         $productId = isset($_GET['product_id']) ? $_GET['product_id'] : null;
-
-        // $method = $_SERVER['REQUEST_METHOD'];
-        $input = json_decode(file_get_contents('php://input'), true);
     
         try {
             switch ($action) {
@@ -55,15 +55,7 @@ class SupplierAPI {
                 case 'getSupplierProducts':
                      return $this->getSupplierProducts($id);
                 break;
-                case 'PUT':
-                    $name = $input['name'];
-                    $id = (int)$_GET['id'];
-                    $sql = "UPDATE suppliers SET name = ? WHERE id = ?";
-                    $stmt = $this->conn->prepare($sql);
-                    $stmt->bind_param("si", $input['name'], $id);
-                    $stmt->execute();
-                    return $this->getSupplier($id);
-                break;
+
                 default:
                     echo json_encode(["message" => "Invalid request method"]);
                 break;
@@ -71,6 +63,54 @@ class SupplierAPI {
             } catch(Exception $e) {
                 echo json_encode(array("message" => "Error: " . $e->getMessage()));
             }
+    }
+
+    /**
+     * Updates data of supplier
+     * @return string JSON encoded products data.
+     */
+    private function updateSupplier($id) {
+        $sql = "UPDATE suppliers SET name = ? WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("si", $inputData['name'], $id);
+        $stmt->execute();
+        return $this->getSupplierData($id);
+    }
+
+        /**
+     * Updates data of product
+     * @param id $id
+     * @return string JSON encoded products data.
+     */
+    private function updateProduct($id) {
+
+        $partNumber = $this->inputData['partNumber'];
+        $supplierId = $this->inputData['supplierId'];
+        $partDesc = $this->inputData['partDesc'];
+        $price = $this->inputData['price'];
+        $quantity = $this->inputData['quantity'];
+        $priority = $this->inputData['priority'];
+        $daysValid = $this->inputData['daysValid'];
+        $conditionId = $this->inputData['conditionId'];
+        $categoryId = $this->inputData['categoryId'];
+
+        if (!$this->checkIfExistsSupplier($supplierId))
+        {
+            echo json_encode(array("message" => "Supplier not found"));
+        } else if (!$this->checkIfExistsCondition($conditionId))
+        {
+            echo json_encode(array("message" => "Conditioin not found"));
+        } else if (!$this->checkIfExistsCategory($categoryId))
+        {
+            echo json_encode(array("message" => "Category not found"));
+        }else {
+            $sql = "UPDATE parts SET partNumber = ?, supplierId = ?, partDesc = ?, price = ?, quantity = ?, priority = ?, daysValid = ?, conditionId = ?, categoryId = ? WHERE id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("sisdiiiiii", $partNumber, $supplierId, $partDesc, $price, $quantity, $priority, $daysValid, $conditionId, $categoryId, $id);
+            $stmt->execute();
+            return $this->getProductData($id);
+        }
+
     }
 
    /**
@@ -103,6 +143,7 @@ class SupplierAPI {
                 return $this->getSupplierData($id);
                 break;
             case 'PUT':
+                return $this->updateSupplier($id);
                 break;
             case 'DELETE':
                 return $this->deleteSupplier($id);
@@ -144,6 +185,7 @@ class SupplierAPI {
                 return $this->getProductData($productId);
                 break;
             case 'PUT':
+                return $this->updateProduct($productId);
                 break;
             case 'DELETE':
                 return $this->deleteProduct($productId);
@@ -230,6 +272,57 @@ class SupplierAPI {
         $stmt->bind_param("i", $id);
         $stmt->execute();
         echo json_encode(["message" => "Product deleted successfully"]);
+    }
+
+        /**
+     * @param int $id
+     * @return boolean
+     */
+    private function checkIfExistsSupplier($id) {
+        $sql = "SELECT * FROM suppliers WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if (null !== $result->fetch_assoc()) {
+            return true;
+        }else {
+            return false;
+        }
+    }
+
+     /**
+     * @param int $id
+     * @return boolean
+     */
+    private function checkIfExistsCondition($id) {
+        $sql = "SELECT * FROM conditions WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if (null !== $result->fetch_assoc()) {
+            return true;
+        }else {
+            return false;
+        }
+    }
+
+    /**
+     * @param int $id
+     * @return boolean
+     */
+    private function checkIfExistsCategory($id) {
+        $sql = "SELECT * FROM categories WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if (null !== $result->fetch_assoc()) {
+            return true;
+        }else {
+            return false;
+        }
     }
 }
 ?>
