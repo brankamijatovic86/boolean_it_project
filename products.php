@@ -7,16 +7,19 @@ require 'database.php';
 
 header("Content-Type: application/json");
 
-$supplierApi = new SupplierAPI($conn);
+echo json_encode(["message" => 'aaaaaa']);
 
-echo $supplierApi->handleRequest();
+
+$productApi = new ProductAPI($conn);
+
+echo $productApi->handleRequest();
 
 $conn->close();
 
 /**
- * SupplierAPI class
+ * ProductAPI class
  */
-class SupplierAPI {
+class ProductAPI {
 
     private $conn;
 
@@ -30,32 +33,28 @@ class SupplierAPI {
 
         $action = isset($_GET['action']) ? $_GET['action'] : '';
         echo json_encode(["message" => $action]);
-        $id = isset($_GET['id']) ? $_GET['id'] : null;
-        $productId = isset($_GET['product_id']) ? $_GET['product_id'] : null;
+        $supplierId = isset($_GET['id']) ? $_GET['id'] : null;
+        echo json_encode(["message" => $_GET]);
+        $product_id = isset($_GET['product_id']) ? $_GET['product_id'] : null;
 
         // $method = $_SERVER['REQUEST_METHOD'];
         $input = json_decode(file_get_contents('php://input'), true);
     
         try {
             switch ($action) {
-                case 'getSupplier':
-                if (isset($id)) {
-                    $id = (int)$_GET['id'];
-                    return $this->getSupplier($id);
-                } else {
-                    $result = $this->conn->query("SELECT * FROM suppliers");
+                case 'getProduct':
+                    return $this->getProduct($product_id, supplierId), ;
+                break;
+                case 'getProducts':
+                    $sql = "SELECT * FROM parts WHERE supplierId = ?";
+                    $stmt = $this->conn->prepare($sql);
+                    $stmt->bind_param("i",  $supplierId);
+                    $stmt->execute();
                     $suppliers = [];
                     while ($row = $result->fetch_assoc()) {
                         $suppliers[] = $row;
                     }
                     echo json_encode($suppliers);
-                }
-                break;
-                case 'getProduct':
-                    return $this->getProduct($productId, $id);
-                break;
-                case 'getProducts':
-                     return $this->getProducts($id);
                 break;
                 case 'PUT':
                     $name = $input['name'];
@@ -88,14 +87,14 @@ class SupplierAPI {
      * @param int $id 
      * @return string JSON encoded supplier data or error message.
      */
-    private function getSupplier($id) {
-        if (!isset($id) || !is_int($id)) {
+    private function getProduct($productId, $supplierId) {
+        if (!isset($supplierId) || !is_int($supplierId)) {
             return json_encode(array("message" => "Invalid supplier ID"));
         }
 
-        $sql = "SELECT * FROM suppliers WHERE id = ?";
+        $sql = "SELECT * FROM parts WHERE partNumber LIKE ? AND supplierId = ?";
         $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param("i", $id);
+        $stmt->bind_param("si", "%". productId ."%", $supplierId);
         $stmt->execute();
         $result = $stmt->get_result();
         $data = $result->fetch_assoc();
@@ -106,45 +105,6 @@ class SupplierAPI {
             echo json_encode(array("message" => "Supplier not found"));
         }
     }
-    
-     /**
-     * Gets the product for passed id
-     * @param int $id 
-     * @return string JSON encoded product data or error message.
-     */
-    private function getProduct($productId, $supplierId) {
-        $sql = "SELECT * FROM parts WHERE id = ? AND supplierId = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param("ii", $productId, $supplierId);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $data = $result->fetch_assoc();
-
-        if ($data) {
-            echo json_encode($data);
-        } else {
-            echo json_encode(array("message" => "Product not found"));
-        }
-    }
-
-         /**
-     * Gets the products of the supplier
-     * @param int $supplierId 
-     * @return string JSON encoded products data or error message.
-     */
-    private function getProducts($supplierId) {
-        $sql = "SELECT * FROM parts WHERE supplierId = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param("i", $supplierId);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $products = [];
-        while ($row = $result->fetch_assoc()) {
-            $products[] = $row;
-        }
-        echo json_encode($products);
-    }
-
 
 }
 ?>

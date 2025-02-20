@@ -1,0 +1,14 @@
+RewriteEngine On
+RewriteBase /boolean_it_project/
+RewriteRule /boolean_it_project/ api.php?action=default [L,QSA]
+
+# Handle API requests for suppliers
+RewriteRule ^suppliers/([0-9]+)$ api.php?action=getSupplier&id=$1 [L,QSA]
+
+# Handle API requests for products for a specific supplier
+RewriteRule ^suppliers/([0-9]+)/products$ api.php?action=getProducts&id=$1 [L,QSA]
+
+# Handle API requests for a specific product for a specific supplier
+RewriteRule ^suppliers/([0-9]+)/products/([0-9]+)$ api.php?action=getProduct&id=$1&product_id=$2 [L,QSA]
+
+RewriteRule ^suppliers api.php?action=getSupplier [L,QSA]
