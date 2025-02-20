@@ -164,3 +164,64 @@ Part of response:
 Request:
 
 `DELETE http://localhost/boolean_it_project/products/8`
+
+## update supplier
+Request:
+
+`PUT http://localhost/boolean_it_project/suppliers/2`
+
+Body -> row
+
+```
+{
+    "id": 2,
+    "name": "Tech Tech"
+}
+```
+
+Response:
+
+```
+{
+    "id": 2,
+    "name": "Tech Tech"
+}
+```
+
+## update product
+Request:
+
+`PUT http://localhost/boolean_it_project/products/1`
+
+Body -> row
+
+```
+    {
+        "partNumber": "H000082850",
+        "supplierId": 1,
+        "partDesc": "CABLE",
+        "price": "13.00",
+        "quantity": 20,
+        "priority": 1,
+        "daysValid": 15,
+        "conditionId": 1,
+        "categoryId": 6
+    },
+```
+
+Response:
+
+```
+    {
+        "id": 1,
+        "partNumber": "H000082850",
+        "supplierId": 1,
+        "partDesc": "CABLE",
+        "price": "13.00",
+        "quantity": 20,
+        "priority": 1,
+        "daysValid": 15,
+        "conditionId": 1,
+        "categoryId": 6
+    },
+```
