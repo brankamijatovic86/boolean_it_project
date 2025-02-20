@@ -28,8 +28,22 @@ Response:
 
 ```
 [
-    {"id":1,"name":"Luigi Tech rrrr"},
-    {"id":2,"name":"Tech suppliers llc"}
+    {
+        "id": 1,
+        "name": "Lower Tech"
+    },
+    {
+        "id": 3,
+        "name": "Luigi Parts"
+    },
+    {
+        "id": 4,
+        "name": "North Bridge Tech"
+    },
+    {
+        "id": 2,
+        "name": "Tech suppliers llc"
+    }
 ]
 ```
 
