@@ -3,14 +3,18 @@
 
 ## create database and tables
 
+```
 create database `booleanIT`;
 use `booleanIT`;
 source create_tables.sql
+```
 
 ## import data from csv file into database
 
+```
 cd /var/www/html/boolean_it_project
 php demo.php
+```
 
 
 # API requests
