@@ -17,6 +17,8 @@ if (($handle = fopen($file, "r")) !== FALSE) {
         $queryParts = "INSERT INTO parts (partNumber, supplierId, partDesc, price, quantity, priority, daysValid, conditionId, categoryId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmtParts = $conn->prepare($queryParts);
         
+        echo "Start of importing data...\n";
+
         while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
             $supplierName = $data[0];
             $daysValid = $data[1];
@@ -55,11 +57,6 @@ if (($handle = fopen($file, "r")) !== FALSE) {
                     echo "Supplier not found!";
                 }
             }
-            echo ("<br>");
-            echo("supplier \n");
-            echo($supplierId);
-            echo ("<br>");
-
         
             $stmtCondition->bind_param("s", $condition);
             if (!$stmtCondition->execute()) {
@@ -84,10 +81,6 @@ if (($handle = fopen($file, "r")) !== FALSE) {
                     echo "Condition not found!";
                 }
             }
-            echo ("<br>");
-            echo("conditionId \n");
-            echo($conditionId);
-            echo ("<br>");
             
             $stmtCategory->bind_param("s", $category);
             if (!$stmtCategory->execute()) {
@@ -111,18 +104,12 @@ if (($handle = fopen($file, "r")) !== FALSE) {
                     echo "Condition not found!";
                 }
             }
-            echo("categoryId \n");
-            echo($categoryId);
-            echo ("<br>");
 
             $stmtParts->bind_param("sisdiiiii", $partNumber, $supplierId, $partDesc, $price, $quantity, $priority, $daysValid, $conditionId, $categoryId);
             if (!$stmtParts->execute()) {
                 echo "An error occurred while inserting the part: " . $stmtParts->error . "\n";
             }
             $partId = $conn->insert_id;
-            echo("partId \n");
-            echo($partId);
-            echo ("<br>");
         } 
 
         $stmtSupplier->close();
@@ -130,11 +117,12 @@ if (($handle = fopen($file, "r")) !== FALSE) {
         $stmtCategory->close();
         $stmtParts->close();
         fclose($handle);
-
-    echo "The data was successfully inserted..";
 } else {
     echo "An error occurred while opening the CSV file!";
 }
+
+sleep(1);
+echo "The data was successfully inserted. ";
 
 $conn->close();
 
