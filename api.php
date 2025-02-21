@@ -3,7 +3,8 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-require 'database.php';
+require_once 'database.php';
+require_once 'csv_export_service.php';
 
 header("Content-Type: application/json");
 
@@ -267,11 +268,7 @@ class SupplierAPI {
      * @return string JSON encoded
      */
     private function deleteSupplier($id) {
-        $sql = "DELETE FROM suppliers WHERE id = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-        echo json_encode(["message" => "Supplier deleted successfully"]);
+        $this->deleteRecord("suppliers", $id);
     }
 
      /**
@@ -280,28 +277,28 @@ class SupplierAPI {
      * @return string JSON encoded
      */
     private function deleteProduct($id) {
-        $sql = "DELETE FROM parts WHERE id = ?";
+        $this->deleteRecord("parts", $id);
+    }
+
+    /**
+     * Deletes the product for passed id
+     * @param int $id 
+     * @return string JSON encoded
+     */
+    private function deleteRecord($table, $id) {
+        $sql = "DELETE FROM {$table} WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param("i", $id);
         $stmt->execute();
-        echo json_encode(["message" => "Product deleted successfully"]);
+        echo json_encode(["message" => "Record deleted successfully"]);
     }
 
-        /**
+     /**
      * @param int $id
      * @return boolean
      */
     private function checkIfExistsSupplier($id) {
-        $sql = "SELECT * FROM suppliers WHERE id = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        if (null !== $result->fetch_assoc()) {
-            return true;
-        }else {
-            return false;
-        }
+        return $this->checkIfExists('suppliers', $id);
     }
 
      /**
@@ -309,16 +306,7 @@ class SupplierAPI {
      * @return boolean
      */
     private function checkIfExistsCondition($id) {
-        $sql = "SELECT * FROM conditions WHERE id = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        if (null !== $result->fetch_assoc()) {
-            return true;
-        }else {
-            return false;
-        }
+        return $this->checkIfExists('conditions', $id);
     }
 
     /**
@@ -326,16 +314,20 @@ class SupplierAPI {
      * @return boolean
      */
     private function checkIfExistsCategory($id) {
-        $sql = "SELECT * FROM categories WHERE id = ?";
+        return $this->checkIfExists('categories', $id);
+    }
+
+     /**
+     * @param string $table
+     * @param int $id
+     * @return boolean
+     */
+    private function checkIfExists($table, $id) {
+        $sql = "SELECT 1 FROM {$table} WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param("i", $id);
         $stmt->execute();
-        $result = $stmt->get_result();
-        if (null !== $result->fetch_assoc()) {
-            return true;
-        }else {
-            return false;
-        }
+        return $stmt->get_result()->fetch_assoc() ? true : false;
     }
 
 
@@ -361,46 +353,13 @@ class SupplierAPI {
             echo "Supplier not found";
             return;
         } else {
-            $fileName = $this->createFilename($supplier['name']);
-            return $this->exportToCSV($header, $products, $fileName);
+            $csvService = new CsvExportService();
+            $fileName = $csvService->createFilename($supplier['name']);
+
+            return $csvService->exportToCSV($header, $products, $fileName);
         }
         
     }
 
-    /**
-     * Creates file name
-     * @param string $name
-     * @return string
-     */
-    private function createFilename($name) {
-        $nameConverted = preg_replace('/[^a-zA-Z0-9]/', '_', $name);
-
-        $currentDateTime = date('Y_m_d-H_i');
-        $filename = $nameConverted . '_' . $currentDateTime . '.csv';
-
-        return $filename;
-    }
-
-    /**
-     * Export to CSV file
-     */
-    private function exportToCSV($header, $data, $fileName) {
-        ob_start();
-        header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename="' . $fileName . '"');
-
-        ob_end_clean();
-
-        $output = fopen( 'php://output', 'w' );
-
-        fputcsv( $output, $header);
-
-        foreach( $data as $key => $value){
-            fputcsv($output, $value);
-        }
-
-        fclose($output);
-        exit;
-    }
 }
 ?>
