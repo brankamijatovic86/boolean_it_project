@@ -258,3 +258,12 @@ Response:
         "categoryId": 6
     },
 ```
+
+# Bonus
+
+## export products of supplier to CSV file
+
+To download CSV file with products open this link in browser
+
+`http://localhost/boolean_it_project/suppliers/1/products/export`
+
