@@ -74,7 +74,7 @@ class SupplierAPI {
     private function updateSupplier($id) {
         $sql = "UPDATE suppliers SET name = ? WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param("si", $inputData['name'], $id);
+        $stmt->bind_param("si", $this->inputData['name'], $id);
         $stmt->execute();
         return $this->getSupplierData($id);
     }
@@ -142,10 +142,20 @@ class SupplierAPI {
 
         switch ($this->requestMethod) {
             case 'GET':
-                return $this->getSupplierData($id);
+                $data = $this->getSupplierData($id);
+                if ($data) {
+                    echo json_encode($data);
+                } else {
+                    echo json_encode(array("message" => "Supplier not found"));
+                }
                 break;
             case 'PUT':
-                return $this->updateSupplier($id);
+                $data = $this->updateSupplier($id);
+                if ($data) {
+                    echo json_encode($data);
+                } else {
+                    echo json_encode(array("message" => "Supplier not found"));
+                }
                 break;
             case 'DELETE':
                 return $this->deleteSupplier($id);
@@ -162,6 +172,7 @@ class SupplierAPI {
      * @return string JSON encoded data of supplier
      */
      private function getSupplierData($id) {
+        
         $sql = "SELECT * FROM suppliers WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param("i", $id);
@@ -170,9 +181,9 @@ class SupplierAPI {
         $data = $result->fetch_assoc();
 
         if ($data) {
-            echo json_encode($data);
+            return $data;
         } else {
-            echo json_encode(array("message" => "Supplier not found"));
+            return null;
         }
      }
     
@@ -343,16 +354,40 @@ class SupplierAPI {
 
         $header = array('Part Number', 'Supplier', 'Part Desc', 'Price', 'Quantity', 'Priority', 'Days Valid', 'Condition', 'Category');
 
-        return $this->exportToCSV($header, $products);
+        $fileName = '';
+        $supplier = $this->getSupplierData($supplierId);
+
+        if ($supplier === null) {
+            echo "Supplier not found";
+            return;
+        } else {
+            $fileName = $this->createFilename($supplier['name']);
+            return $this->exportToCSV($header, $products, $fileName);
+        }
+        
+    }
+
+    /**
+     * Creates file name
+     * @param string $name
+     * @return string
+     */
+    private function createFilename($name) {
+        $nameConverted = preg_replace('/[^a-zA-Z0-9]/', '_', $name);
+
+        $currentDateTime = date('Y_m_d-H_i');
+        $filename = $nameConverted . '_' . $currentDateTime . '.csv';
+
+        return $filename;
     }
 
     /**
      * Export to CSV file
      */
-    private function exportToCSV($header, $data) {
+    private function exportToCSV($header, $data, $fileName) {
         ob_start();
         header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename=products.csv');
+        header('Content-Disposition: attachment; filename="' . $fileName . '"');
 
         ob_end_clean();
 
