@@ -55,7 +55,9 @@ class SupplierAPI {
                 case 'getSupplierProducts':
                      return $this->getSupplierProducts($id);
                 break;
-
+                case 'exportSupplierProducts':
+                    $this->exportSupplierProducts($id);
+                break;
                 default:
                     echo json_encode(["message" => "Invalid request method"]);
                 break;
@@ -323,6 +325,47 @@ class SupplierAPI {
         }else {
             return false;
         }
+    }
+
+
+    /** Export products of supplier
+     */
+    private function exportSupplierProducts($supplierId) {
+        $sql = "SELECT partNumber, supplierId, partDesc, price, quantity, priority, daysValid, conditionId, categoryId FROM parts WHERE supplierId = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("i", $supplierId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $products = [];
+        while ($row = $result->fetch_assoc()) {
+            $products[] = $row;
+        }
+
+        $header = array('Part Number', 'Supplier', 'Part Desc', 'Price', 'Quantity', 'Priority', 'Days Valid', 'Condition', 'Category');
+
+        return $this->exportToCSV($header, $products);
+    }
+
+    /**
+     * Export to CSV file
+     */
+    private function exportToCSV($header, $data) {
+        ob_start();
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=products.csv');
+
+        ob_end_clean();
+
+        $output = fopen( 'php://output', 'w' );
+
+        fputcsv( $output, $header);
+
+        foreach( $data as $key => $value){
+            fputcsv($output, $value);
+        }
+
+        fclose($output);
+        exit;
     }
 }
 ?>

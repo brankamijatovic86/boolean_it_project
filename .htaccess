@@ -11,8 +11,11 @@ RewriteRule ^suppliers/([0-9]+)/products$ api.php?action=getSupplierProducts&id=
 # Handle API requests for a specific product for a specific supplier
 RewriteRule ^suppliers/([0-9]+)/products/([0-9]+)$ api.php?action=getProduct&id=$1&product_id=$2 [L,QSA]
 
+# Handle API requests for export products for a specific supplier
+RewriteRule ^suppliers/([0-9]+)/products/export$ api.php?action=exportSupplierProducts&id=$1 [L,QSA]
+
 # Handle API requests for all suppliers
-RewriteRule ^suppliers api.php?action=getSuppliers [L,QSA]
+RewriteRule ^suppliers$ api.php?action=getSuppliers [L,QSA]
 
 
 
