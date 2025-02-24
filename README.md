@@ -19,6 +19,8 @@ php demo.php
 
 # API requests
 
+Use Postman for API requests
+
 ## get suppliers
 Request:
 
