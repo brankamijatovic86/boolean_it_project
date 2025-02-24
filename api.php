@@ -38,34 +38,29 @@ class SupplierAPI {
         
         $id = isset($_GET['id']) ? (int)$_GET['id'] : null;
         $productId = isset($_GET['product_id']) ? $_GET['product_id'] : null;
-    
+
         try {
-            switch ($action) {
-                case 'getSupplier':
-                    return $this->getSupplier($id);
-                break;
-                case 'getSuppliers':
-                   return $this->getSuppliers();
-                break;
-                case 'getProduct':
-                    return $this->getProduct($productId);
-                break;
-                case 'getProducts':
-                     return $this->getProducts();
-                break;
-                case 'getSupplierProducts':
-                     return $this->getSupplierProducts($id);
-                break;
-                case 'exportSupplierProducts':
-                    $this->exportSupplierProducts($id);
-                break;
-                default:
-                    echo json_encode(["message" => "Invalid request method"]);
-                break;
-                }
-            } catch(Exception $e) {
-                echo json_encode(array("message" => "Error: " . $e->getMessage()));
+            $methodMap = [
+                'getSupplier' => 'getSupplier',
+                'getSuppliers' => 'getSuppliers',
+                'getProduct' => 'getProduct',
+                'getProducts' => 'getProducts',
+                'getSupplierProducts' => 'getSupplierProducts',
+                'exportSupplierProducts' => 'exportSupplierProducts'
+            ];
+
+            if (isset($methodMap[$action])) {
+                $this->{$methodMap[$action]}($id ?? $productId);
+            } else {
+                $this->sendError("Invalid request method");
             }
+        } catch (Exception $e) {
+            $this->sendError("Error: " . $e->getMessage());
+        }
+    }
+
+    private function sendError($message) {
+        echo json_encode(["message" => $message]);
     }
 
     /**
@@ -99,13 +94,13 @@ class SupplierAPI {
 
         if (!$this->checkIfExistsSupplier($supplierId))
         {
-            echo json_encode(array("message" => "Supplier not found"));
+            $this->sendError("Supplier not found");
         } else if (!$this->checkIfExistsCondition($conditionId))
         {
-            echo json_encode(array("message" => "Conditioin not found"));
+            $this->sendError("Conditioin not found");
         } else if (!$this->checkIfExistsCategory($categoryId))
         {
-            echo json_encode(array("message" => "Category not found"));
+            $this->sendError("Category not found");
         }else {
             $sql = "UPDATE parts SET partNumber = ?, supplierId = ?, partDesc = ?, price = ?, quantity = ?, priority = ?, daysValid = ?, conditionId = ?, categoryId = ? WHERE id = ?";
             $stmt = $this->conn->prepare($sql);
@@ -116,19 +111,28 @@ class SupplierAPI {
 
     }
 
-   /**
-     * Gets all suppliers
-     * @return string JSON encoded products data.
+       /**
+     * Gets all table records
+     * @return string JSON encoded table records
      */
-    private function getSuppliers() {
-        $stmt = $this->conn->prepare("SELECT * FROM suppliers");
+    private function getList($table) {
+        $sql = "SELECT * FROM {$table}";
+        $stmt = $this->conn->prepare($sql);
         $stmt->execute();
         $result = $stmt->get_result();
-        $suppliers = [];
+        $list = [];
         while ($row = $result->fetch_assoc()) {
-            $suppliers[] = $row;
+            $list[] = $row;
         }
-        echo json_encode($suppliers);
+        echo json_encode($list);
+    }
+
+   /**
+     * Gets all suppliers
+     * @return string JSON encoded suppliers data.
+     */
+    private function getSuppliers() {
+        $this->getList('suppliers');
     }
     
     /**
@@ -138,7 +142,8 @@ class SupplierAPI {
      */
     private function getSupplier($id) {
         if (!isset($id) || !is_int($id)) {
-            return json_encode(array("message" => "Invalid supplier ID"));
+            
+            return $this->sendError("Invalid supplier ID");
         }
 
         switch ($this->requestMethod) {
@@ -147,7 +152,7 @@ class SupplierAPI {
                 if ($data) {
                     echo json_encode($data);
                 } else {
-                    echo json_encode(array("message" => "Supplier not found"));
+                    $this->sendError("Supplier not found");
                 }
                 break;
             case 'PUT':
@@ -155,7 +160,7 @@ class SupplierAPI {
                 if ($data) {
                     echo json_encode($data);
                 } else {
-                    echo json_encode(array("message" => "Supplier not found"));
+                    $this->sendError("Supplier not found");
                 }
                 break;
             case 'DELETE':
@@ -225,7 +230,7 @@ class SupplierAPI {
         if ($data) {
             echo json_encode($data);
         } else {
-            echo json_encode(array("message" => "Product not found"));
+            return $this->sendError("Product not found");
         }
     }
 
@@ -252,14 +257,7 @@ class SupplierAPI {
      * @return string JSON encoded products data.
      */
     private function getProducts() {
-        $stmt = $this->conn->prepare("SELECT * FROM parts");
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $products = [];
-        while ($row = $result->fetch_assoc()) {
-            $products[] = $row;
-        }
-        echo json_encode($products);
+        $this->getList('parts');
     }
 
    /**
@@ -350,7 +348,7 @@ class SupplierAPI {
         $supplier = $this->getSupplierData($supplierId);
 
         if ($supplier === null) {
-            echo "Supplier not found";
+            $this->sendError("Supplier not found");
             return;
         } else {
             $csvService = new CsvExportService();
